@@ -1,0 +1,10 @@
+[project]
+name = "repl-nix-twittertracker-1"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "discord-py>=2.4.0",
+    "psycopg2-binary>=2.9.10",
+    "tweepy>=4.14.0",
+]
