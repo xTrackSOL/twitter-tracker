@@ -2,8 +2,8 @@ from PIL import Image, ImageDraw, ImageFilter
 import math
 
 def create_logo(size=512):
-    # Create a new image with black background
-    img = Image.new('RGBA', (size, size), (15, 17, 23, 255))  # Dark background matching website
+    # Create a new image with transparent background
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     # Calculate dimensions
@@ -45,34 +45,31 @@ def create_logo(size=512):
         [(size - padding, size - padding - corner_size), (size - padding, size - padding), corner_stroke]
     ]
 
-    # Draw tracking corners with enhanced glow
-    for start, end, width in corners:
-        draw.line([start, end], fill=(0, 136, 204, 255), width=width)  # Telegram blue color
-
     # Draw X symbol
     for points in x_points:
         draw.polygon(points, fill='white')
 
-    # Add glow effect
-    glow = img.filter(ImageFilter.GaussianBlur(radius=5))
-    img = Image.alpha_composite(img, glow)
-
-    # Add blue glow to tracking elements
-    blue_glow = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    blue_draw = ImageDraw.Draw(blue_glow)
+    # Draw tracking corners with glow
     for start, end, width in corners:
-        blue_draw.line([start, end], fill=(0, 136, 204, 100), width=width * 3)
-    blue_glow = blue_glow.filter(ImageFilter.GaussianBlur(radius=10))
-    img = Image.alpha_composite(img, blue_glow)
+        # Draw the main line
+        draw.line([start, end], fill=(0, 136, 204, 255), width=width)
+
+    # Apply glow effect
+    glow = img.filter(ImageFilter.GaussianBlur(radius=5))
+
+    # Create final image with dark background
+    final = Image.new('RGBA', (size, size), (15, 17, 23, 255))
+    final = Image.alpha_composite(final, glow)
+    final = Image.alpha_composite(final, img)
 
     # Save both the original and static folder
-    img.save('bot_logo.png', 'PNG')
-    img.save('static/images/bot_logo.png', 'PNG')
+    final.save('bot_logo.png', 'PNG')
+    final.save('static/images/bot_logo.png', 'PNG')
     print("Logo generated successfully!")
 
 def create_banner(width=1500, height=500):
     """Create a Twitter banner with tracking theme"""
-    # Create a new image with black background
+    # Create a new image with dark background
     img = Image.new('RGBA', (width, height), (15, 17, 23, 255))
     draw = ImageDraw.Draw(img)
 
@@ -95,67 +92,46 @@ def create_banner(width=1500, height=500):
         [(width - padding, height - padding - corner_size), (width - padding, height - padding), stroke_width],
     ]
 
-    # Draw tracking grid lines
-    grid_spacing = height // 8
-    num_lines = width // grid_spacing
-    for i in range(1, num_lines):
-        x = i * grid_spacing
-        draw.line([(x, 0), (x, height)], fill=(0, 136, 204, 30), width=1)
+    # Draw tracking corners with glow
+    corner_layer = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    corner_draw = ImageDraw.Draw(corner_layer)
 
-    # Draw tracking corners with enhanced glow
     for start, end, width in corners:
-        draw.line([start, end], fill=(0, 136, 204, 255), width=width)
+        corner_draw.line([start, end], fill=(0, 136, 204, 255), width=width)
 
-    # Create glow effect on a separate image with same dimensions
-    glow_img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    glow_draw = ImageDraw.Draw(glow_img)
+    # Add small X symbols
+    x_size = height // 8
+    x_positions = [(width // 4, height // 2), (width * 3 // 4, height // 2)]
 
-    # Draw the same elements on glow image
-    for start, end, width in corners:
-        glow_draw.line([start, end], fill=(0, 136, 204, 255), width=width)
+    x_layer = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+    x_draw = ImageDraw.Draw(x_layer)
 
-    # Apply blur to glow image
-    glow_img = glow_img.filter(ImageFilter.GaussianBlur(radius=5))
-
-    # Composite the images
-    img = Image.alpha_composite(img, glow_img)
-
-    # Add blue glow to tracking elements
-    blue_glow = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    blue_draw = ImageDraw.Draw(blue_glow)
-    for start, end, width in corners:
-        blue_draw.line([start, end], fill=(0, 136, 204, 100), width=width * 3)
-    blue_glow = blue_glow.filter(ImageFilter.GaussianBlur(radius=15))
-    img = Image.alpha_composite(img, blue_glow)
-
-    # Add small logos as decorative elements
-    logo_size = height // 4
-    logo_positions = [
-        (width // 4 - logo_size // 2, height // 2 - logo_size // 2),
-        (width * 3 // 4 - logo_size // 2, height // 2 - logo_size // 2)
-    ]
-
-    # Create and paste small X symbols
-    for pos_x, pos_y in logo_positions:
-        x_size = logo_size // 3
-        center_x = pos_x + logo_size // 2
-        center_y = pos_y + logo_size // 2
-
+    for center_x, center_y in x_positions:
+        x_stroke = x_size // 8
         x_points = [
             # First diagonal
             [(center_x - x_size, center_y - x_size),
-             (center_x - x_size + stroke_width, center_y - x_size),
+             (center_x - x_size + x_stroke, center_y - x_size),
              (center_x + x_size, center_y + x_size),
-             (center_x + x_size - stroke_width, center_y + x_size)],
+             (center_x + x_size - x_stroke, center_y + x_size)],
             # Second diagonal
             [(center_x + x_size, center_y - x_size),
-             (center_x + x_size - stroke_width, center_y - x_size),
+             (center_x + x_size - x_stroke, center_y - x_size),
              (center_x - x_size, center_y + x_size),
-             (center_x - x_size + stroke_width, center_y + x_size)]
+             (center_x - x_size + x_stroke, center_y + x_size)]
         ]
-
         for points in x_points:
-            draw.polygon(points, fill=(255, 255, 255, 128))
+            x_draw.polygon(points, fill=(255, 255, 255, 128))
+
+    # Create glow effects
+    corner_glow = corner_layer.filter(ImageFilter.GaussianBlur(radius=10))
+    x_glow = x_layer.filter(ImageFilter.GaussianBlur(radius=5))
+
+    # Composite all layers
+    img = Image.alpha_composite(img, corner_glow)
+    img = Image.alpha_composite(img, corner_layer)
+    img = Image.alpha_composite(img, x_glow)
+    img = Image.alpha_composite(img, x_layer)
 
     # Save banner
     img.save('twitter_banner.png', 'PNG')
