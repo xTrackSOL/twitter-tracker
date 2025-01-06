@@ -13,9 +13,11 @@ OAUTH_URL = (
     '&scope=bot%20applications.commands'
 )
 
+TELEGRAM_BOT_USERNAME = os.getenv('TELEGRAM_BOT_USERNAME', 'YourBotUsername')
+
 @app.route('/')
 def index():
-    return render_template('index.html', oauth_url=OAUTH_URL)
+    return render_template('index.html', oauth_url=OAUTH_URL, bot_username=TELEGRAM_BOT_USERNAME)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=3000)

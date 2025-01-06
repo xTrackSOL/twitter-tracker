@@ -1,6 +1,6 @@
 :root {
-    --primary: #6B46C1;
-    --primary-hover: #805AD5;
+    --primary: #0088cc;
+    --primary-hover: #0099e6;
     --background: #0F1117;
     --text: #E2E8F0;
     --card-bg: rgba(255, 255, 255, 0.05);
@@ -91,7 +91,7 @@ h1 {
     opacity: 0.9;
 }
 
-.discord-button {
+.telegram-button {
     display: inline-flex;
     align-items: center;
     gap: 0.75rem;
@@ -106,10 +106,10 @@ h1 {
     margin-bottom: 4rem;
 }
 
-.discord-button:hover {
+.telegram-button:hover {
     background-color: var(--primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(107, 70, 193, 0.2);
+    box-shadow: 0 8px 30px rgba(0, 136, 204, 0.2);
 }
 
 .features {
@@ -122,7 +122,7 @@ h1 {
 
 .feature-card {
     background: var(--card-bg);
-    padding: 2rem; /* Increased padding as implied by the intention */
+    padding: 2rem;
     border-radius: 12px;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
