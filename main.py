@@ -6,15 +6,11 @@ app = Flask(__name__)
 
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID', '')
 DISCORD_PERMISSIONS = '537159744'  # Bot management, message sending, embed links
-SCOPES = ['bot', 'applications.commands']
-
-# Create properly encoded OAuth URL
 OAUTH_URL = (
     'https://discord.com/api/oauth2/authorize'
     f'?client_id={DISCORD_CLIENT_ID}'
     f'&permissions={DISCORD_PERMISSIONS}'
-    f'&scope={quote(" ".join(SCOPES))}'
-    '&response_type=code'
+    '&scope=bot%20applications.commands'
 )
 
 @app.route('/')
