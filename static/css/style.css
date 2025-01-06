@@ -21,6 +21,31 @@ body {
     overflow-x: hidden;
 }
 
+/* Social Navigation */
+.social-nav {
+    position: fixed;
+    top: 1rem;
+    right: 2rem;
+    z-index: 100;
+}
+
+.social-icons {
+    display: flex;
+    gap: 1rem;
+}
+
+.social-icon {
+    color: var(--text);
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.social-icon:hover {
+    opacity: 1;
+    transform: translateY(-2px);
+    color: var(--primary);
+}
+
 .background-animation {
     position: fixed;
     top: 0;
@@ -120,14 +145,19 @@ h1 {
 }
 
 @media (max-width: 768px) {
+    .social-nav {
+        top: 0.5rem;
+        right: 1rem;
+    }
+
     h1 {
         font-size: 2.5rem;
     }
-    
+
     .tagline {
         font-size: 1.25rem;
     }
-    
+
     .features {
         grid-template-columns: 1fr;
     }
