@@ -23,6 +23,10 @@ args = "Twitter Feed Test"
 task = "workflow.run"
 args = "Generate Logo"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Landing Page Server"
+
 [[workflows.workflow]]
 name = "Discord Twitter Bot"
 author = "agent"
@@ -65,5 +69,24 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python generate_logo.py"
 
+[[workflows.workflow]]
+name = "Landing Page Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+waitForPort = 3000
+
 [deployment]
 run = ["sh", "-c", "python bot.py"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
