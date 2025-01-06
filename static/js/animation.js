@@ -41,7 +41,7 @@ class Particle {
     }
 
     draw() {
-        ctx.fillStyle = `rgba(107, 70, 193, ${this.alpha})`;
+        ctx.fillStyle = `rgba(0, 136, 204, ${this.alpha})`;  // Changed to Telegram blue
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
@@ -64,7 +64,7 @@ function drawLines(p1, p2) {
 
     if (distance < 150) {
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(107, 70, 193, ${0.2 * (1 - distance / 150)})`;
+        ctx.strokeStyle = `rgba(0, 136, 204, ${0.2 * (1 - distance / 150)})`;  // Changed to Telegram blue
         ctx.lineWidth = 1;
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);

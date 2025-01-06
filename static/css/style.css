@@ -79,7 +79,7 @@ body {
 h1 {
     font-size: 3.5rem;
     margin-bottom: 1rem;
-    background: linear-gradient(135deg, #805AD5 0%, #6B46C1 100%);
+    background: linear-gradient(135deg, #0099e6 0%, #0088cc 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-weight: 800;
