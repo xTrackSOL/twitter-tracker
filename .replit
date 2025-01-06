@@ -86,6 +86,7 @@ waitForPort = 3000
 
 [deployment]
 run = ["sh", "-c", "python bot.py"]
+deploymentTarget = "cloudrun"
 
 [[ports]]
 localPort = 3000
