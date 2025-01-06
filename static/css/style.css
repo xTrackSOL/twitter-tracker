@@ -73,7 +73,7 @@ body {
     height: 180px;
     margin: 2rem auto;
     display: block;
-    filter: drop-shadow(0 0 20px rgba(107, 70, 193, 0.3));
+    filter: drop-shadow(0 0 20px rgba(0, 136, 204, 0.3));
 }
 
 h1 {
