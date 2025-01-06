@@ -6,13 +6,17 @@ from cogs.twitter_commands import TwitterCommands
 
 class TwitterBot(commands.Bot):
     def __init__(self):
-        # Configure intents
+        # Configure all required intents matching the Discord portal settings
         intents = discord.Intents.default()
         intents.message_content = True
-        # Enable all necessary intents for the bot
         intents.guilds = True
         intents.guild_messages = True
-        intents.members = True  # Added this for better server member handling
+        intents.members = True
+        # Enable all other necessary intents shown in the portal
+        intents.guild_scheduled_events = True
+        intents.voice_states = True
+        intents.guild_messages = True
+        intents.dm_messages = True
 
         super().__init__(
             command_prefix=COMMAND_PREFIX,
@@ -36,7 +40,7 @@ class TwitterBot(commands.Bot):
 
 def run_bot():
     bot = TwitterBot()
-    bot.run(DISCORD_TOKEN, log_handler=None)  # Disable default handler to avoid double logging
+    bot.run(DISCORD_TOKEN, log_handler=None)
 
 if __name__ == "__main__":
     run_bot()

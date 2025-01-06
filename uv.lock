@@ -339,6 +339,7 @@ name = "repl-nix-twittertracker-1"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "discord-py" },
     { name = "feedparser" },
     { name = "psycopg2-binary" },
@@ -346,6 +347,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = ">=3.11.11" },
     { name = "discord-py", specifier = ">=2.4.0" },
     { name = "feedparser", specifier = ">=6.0.11" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
