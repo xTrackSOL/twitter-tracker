@@ -2,8 +2,8 @@ from PIL import Image, ImageDraw, ImageFilter
 import math
 
 def create_logo(size=512):
-    # Create a new image with transparency
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    # Create a new image with black background
+    img = Image.new('RGBA', (size, size), (15, 17, 23, 255))  # Dark background matching website
     draw = ImageDraw.Draw(img)
 
     # Calculate dimensions
@@ -45,21 +45,25 @@ def create_logo(size=512):
         [(size - padding, size - padding - corner_size), (size - padding, size - padding), corner_stroke]
     ]
 
-    # Draw tracking corners
+    # Draw tracking corners with enhanced glow
     for start, end, width in corners:
-        draw.line([start, end], fill='white', width=width)
+        draw.line([start, end], fill=(0, 136, 204, 255), width=width)  # Telegram blue color
 
     # Draw X symbol
     for points in x_points:
         draw.polygon(points, fill='white')
 
     # Add glow effect
-    glow = img.filter(ImageFilter.GaussianBlur(radius=3))
-    img = Image.alpha_composite(glow, img)
+    glow = img.filter(ImageFilter.GaussianBlur(radius=5))
+    img = Image.alpha_composite(img, img)
 
-    # Add slight blue tint to tracking elements
-    blue_tint = Image.new('RGBA', (size, size), (0, 136, 204, 40))
-    img = Image.alpha_composite(img, blue_tint)
+    # Add blue glow to tracking elements
+    blue_glow = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    blue_draw = ImageDraw.Draw(blue_glow)
+    for start, end, width in corners:
+        blue_draw.line([start, end], fill=(0, 136, 204, 100), width=width * 3)
+    blue_glow = blue_glow.filter(ImageFilter.GaussianBlur(radius=10))
+    img = Image.alpha_composite(img, blue_glow)
 
     # Save both the original and static folder
     img.save('bot_logo.png', 'PNG')
