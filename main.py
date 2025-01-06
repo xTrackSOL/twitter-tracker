@@ -4,7 +4,8 @@ import os
 app = Flask(__name__)
 
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID', '')
-DISCORD_PERMISSIONS = '67584' # Permissions for sending messages and managing messages
+# Updated permissions to include necessary bot permissions
+DISCORD_PERMISSIONS = '537159744' # Permissions for bot management, message sending, and embed links
 OAUTH_URL = f'https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&permissions={DISCORD_PERMISSIONS}&scope=bot%20applications.commands'
 
 @app.route('/')
