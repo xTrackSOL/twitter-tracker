@@ -45,7 +45,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python test_twitter.py"
+args = "python test_twitter.py elonmusk"
 
 [deployment]
 run = ["sh", "-c", "python bot.py"]
