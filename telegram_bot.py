@@ -3,7 +3,7 @@ import logging
 import psycopg2
 from psycopg2.extras import DictCursor
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import Updater, CommandHandler, CallbackContext
 
 # Enable logging
 logging.basicConfig(
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def get_db_connection():
     return psycopg2.connect(os.getenv('DATABASE_URL'))
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def start(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /start is issued."""
     welcome_message = (
         "👋 Welcome to Twitter Tracker Bot!\n\n"
@@ -28,9 +28,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "/list - Show all accounts you're tracking\n"
         "/help - Show this help message"
     )
-    await update.message.reply_text(welcome_message)
+    update.message.reply_text(welcome_message)
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def help_command(update: Update, context: CallbackContext) -> None:
     """Send a message when the command /help is issued."""
     help_text = (
         "🤖 Twitter Tracker Bot Commands:\n\n"
@@ -41,12 +41,12 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/list - Show all accounts you're currently tracking\n\n"
         "/help - Show this help message"
     )
-    await update.message.reply_text(help_text)
+    update.message.reply_text(help_text)
 
-async def track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def track(update: Update, context: CallbackContext) -> None:
     """Track a Twitter account."""
     if not context.args:
-        await update.message.reply_text("❌ Please provide a Twitter username to track.\nExample: /track elonmusk")
+        update.message.reply_text("❌ Please provide a Twitter username to track.\nExample: /track elonmusk")
         return
 
     username = context.args[0].strip('@').lower()
@@ -65,18 +65,18 @@ async def track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     (chat_id, username)
                 )
                 if cur.fetchone() is None:
-                    await update.message.reply_text(f"You're already tracking @{username}")
+                    update.message.reply_text(f"You're already tracking @{username}")
                 else:
-                    await update.message.reply_text(f"✅ Now tracking @{username}")
+                    update.message.reply_text(f"✅ Now tracking @{username}")
                 conn.commit()
     except Exception as e:
         logger.error(f"Database error while tracking: {e}")
-        await update.message.reply_text("❌ Sorry, something went wrong. Please try again later.")
+        update.message.reply_text("❌ Sorry, something went wrong. Please try again later.")
 
-async def untrack(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def untrack(update: Update, context: CallbackContext) -> None:
     """Untrack a Twitter account."""
     if not context.args:
-        await update.message.reply_text("❌ Please provide a Twitter username to untrack.\nExample: /untrack elonmusk")
+        update.message.reply_text("❌ Please provide a Twitter username to untrack.\nExample: /untrack elonmusk")
         return
 
     username = context.args[0].strip('@').lower()
@@ -94,15 +94,15 @@ async def untrack(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     (chat_id, username)
                 )
                 if cur.fetchone() is None:
-                    await update.message.reply_text(f"You're not tracking @{username}")
+                    update.message.reply_text(f"You're not tracking @{username}")
                 else:
-                    await update.message.reply_text(f"✅ Stopped tracking @{username}")
+                    update.message.reply_text(f"✅ Stopped tracking @{username}")
                 conn.commit()
     except Exception as e:
         logger.error(f"Database error while untracking: {e}")
-        await update.message.reply_text("❌ Sorry, something went wrong. Please try again later.")
+        update.message.reply_text("❌ Sorry, something went wrong. Please try again later.")
 
-async def list_tracked(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+def list_tracked(update: Update, context: CallbackContext) -> None:
     """List all tracked Twitter accounts."""
     chat_id = update.effective_chat.id
 
@@ -121,28 +121,40 @@ async def list_tracked(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 accounts = cur.fetchall()
 
                 if not accounts:
-                    await update.message.reply_text("📋 You're not tracking any accounts yet.\nUse /track <username> to start tracking!")
+                    update.message.reply_text("📋 You're not tracking any accounts yet.\nUse /track <username> to start tracking!")
                 else:
                     account_list = "\n".join(f"• @{account[0]}" for account in accounts)
-                    await update.message.reply_text(f"📋 Tracked accounts:\n\n{account_list}")
+                    update.message.reply_text(f"📋 Tracked accounts:\n\n{account_list}")
     except Exception as e:
         logger.error(f"Database error while listing: {e}")
-        await update.message.reply_text("❌ Sorry, something went wrong. Please try again later.")
+        update.message.reply_text("❌ Sorry, something went wrong. Please try again later.")
 
 def main() -> None:
     """Start the bot."""
-    # Create the Application and pass it your bot's token
-    application = Application.builder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
+    try:
+        # Create the Updater and pass it your bot's token
+        updater = Updater(os.getenv('TELEGRAM_BOT_TOKEN', '7732246779:AAHCJQeiZFaH27SkQ2HaffiP7_l2tgAQwBM'))
 
-    # Add command handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("track", track))
-    application.add_handler(CommandHandler("untrack", untrack))
-    application.add_handler(CommandHandler("list", list_tracked))
+        # Get the dispatcher to register handlers
+        dispatcher = updater.dispatcher
 
-    # Start the Bot
-    application.run_polling()
+        # Add command handlers
+        dispatcher.add_handler(CommandHandler("start", start))
+        dispatcher.add_handler(CommandHandler("help", help_command))
+        dispatcher.add_handler(CommandHandler("track", track))
+        dispatcher.add_handler(CommandHandler("untrack", untrack))
+        dispatcher.add_handler(CommandHandler("list", list_tracked))
+
+        # Start the Bot
+        logger.info("Starting bot...")
+        updater.start_polling()
+
+        # Run the bot until you press Ctrl-C
+        updater.idle()
+
+    except Exception as e:
+        logger.error(f"Error starting bot: {e}")
+        raise
 
 if __name__ == "__main__":
     main()
