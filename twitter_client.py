@@ -94,6 +94,7 @@ class TwitterClient:
     async def get_user_by_username(self, username: str) -> Optional[Dict]:
         """Get user information from their RSS feed"""
         try:
+            print(f"\nLooking up user @{username}")
             feed = await self._try_fetch_feed(username)
             if feed and feed.feed:
                 # Extract user information from feed
@@ -103,16 +104,20 @@ class TwitterClient:
                 elif "/" in name:  # Format: "Username / @handle"
                     name = name.split("/")[0].strip()
 
-                return {
+                user_info = {
                     'username': username.strip('@'),
                     'name': name,
                     'id': username.strip('@'),
                     'profile_image_url': self._get_profile_image(feed)
                 }
+                print(f"Successfully found user: {user_info['name']} (@{user_info['username']})")
+                return user_info
+
+            print(f"Could not find user @{username}")
             return None
 
         except Exception as e:
-            print(f"Error fetching user {username}: {str(e)}")
+            print(f"Error fetching user @{username}: {str(e)}")
             return None
 
     async def get_recent_tweets(self, username: str) -> List[Dict]:
@@ -121,6 +126,7 @@ class TwitterClient:
             print(f"\nFetching tweets for @{username}")
             feed = await self._try_fetch_feed(username)
             if not feed or not feed.entries:
+                print(f"No tweets found for @{username}")
                 return []
 
             tweets = []
@@ -135,7 +141,6 @@ class TwitterClient:
                         except Exception:
                             parsed_date = datetime.now()
 
-                    # Create tweet object with enhanced metadata
                     tweet = {
                         'id': self._extract_tweet_id(entry.link),
                         'text': self._clean_text(entry.description),
@@ -144,20 +149,21 @@ class TwitterClient:
                         'referenced_tweets': self._extract_tweet_type(entry.title, entry.description)
                     }
 
-                    # Extract media with improved handling
                     media = self._extract_media(entry.description)
                     if media:
                         tweet['attachments'] = {'media': media}
 
                     tweets.append(tweet)
+                    print(f"Found tweet {tweet['id']}")
                 except Exception as e:
                     print(f"Error parsing tweet: {str(e)}")
                     continue
 
+            print(f"Found {len(tweets)} tweets for @{username}")
             return tweets
 
         except Exception as e:
-            print(f"Error fetching tweets for {username}: {str(e)}")
+            print(f"Error fetching tweets for @{username}: {str(e)}")
             return []
 
     def _extract_tweet_type(self, title: str, description: str) -> List[Dict]:
