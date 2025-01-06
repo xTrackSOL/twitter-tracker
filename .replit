@@ -19,6 +19,10 @@ args = "Discord Twitter Bot"
 task = "workflow.run"
 args = "Twitter Feed Test"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Generate Logo"
+
 [[workflows.workflow]]
 name = "Discord Twitter Bot"
 author = "agent"
@@ -46,6 +50,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python test_twitter.py elonmusk"
+
+[[workflows.workflow]]
+name = "Generate Logo"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python generate_logo.py"
 
 [deployment]
 run = ["sh", "-c", "python bot.py"]

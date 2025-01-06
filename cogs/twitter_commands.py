@@ -27,16 +27,26 @@ class TwitterCommands(commands.Cog):
         await interaction.response.defer(thinking=True)
 
         try:
-            # Remove @ symbol if provided
-            username = username.lstrip('@')
+            # Remove @ symbol and whitespace if provided
+            username = username.strip().lstrip('@')
 
+            # Basic validation
+            if not username:
+                await interaction.followup.send(
+                    embed=format_error_message("Please provide a valid Twitter username"),
+                    ephemeral=True
+                )
+                return
+
+            print(f"Attempting to track Twitter user: @{username}")
             # Verify Twitter account exists
             user = await self.twitter.get_user_by_username(username)
             if not user:
-                error_msg = "Could not find this Twitter account. Please check that:"
-                error_msg += "\n• The username is spelled correctly"
-                error_msg += "\n• The account is not private"
-                error_msg += "\n• The account exists and is active"
+                error_msg = "Could not find this Twitter account. Please check that:\n"
+                error_msg += "• The username is spelled correctly\n"
+                error_msg += "• The account is not private\n"
+                error_msg += "• The account exists and is active\n"
+                error_msg += "\nIf you're sure the account exists, please try again in a few moments."
                 await interaction.followup.send(
                     embed=format_error_message(error_msg),
                     ephemeral=True
@@ -44,7 +54,16 @@ class TwitterCommands(commands.Cog):
                 return
 
             # Add to database
-            self.db.add_twitter_account(username, interaction.channel_id)
+            result = self.db.add_twitter_account(username, interaction.channel_id)
+            if not result:
+                await interaction.followup.send(
+                    embed=discord.Embed(
+                        title="ℹ️ Already Tracking",
+                        description=f"@{username} is already being tracked in this channel!",
+                        color=discord.Color.blue()
+                    )
+                )
+                return
 
             embed = discord.Embed(
                 title="✅ Success",
@@ -59,8 +78,9 @@ class TwitterCommands(commands.Cog):
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
+            print(f"Error tracking user {username}: {str(e)}")
             await interaction.followup.send(
-                embed=format_error_message(f"An error occurred while setting up tracking: {str(e)}"),
+                embed=format_error_message(f"An error occurred while setting up tracking. Please try again in a few moments."),
                 ephemeral=True
             )
 
