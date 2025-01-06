@@ -22,5 +22,12 @@ COLORS = {
     'success': 0x48BB78
 }
 
-# Refresh interval for checking new tweets (in seconds)
-TWEET_CHECK_INTERVAL = 15  # Reduced to 15 seconds for faster updates
+# Faster refresh interval and timeouts
+TWEET_CHECK_INTERVAL = 5  # Check every 5 seconds
+MAX_CONCURRENT_REQUESTS = 3  # Maximum number of concurrent tweet checks
+REQUEST_TIMEOUT = 2  # 2 second timeout for requests
+NITTER_INSTANCES = [
+    "https://nitter.privacydev.net",
+    "https://nitter.1d4.us",
+    "https://nitter.kavin.rocks"
+]
