@@ -2,33 +2,59 @@ import feedparser
 import re
 from datetime import datetime
 from urllib.parse import quote
+import asyncio
 
 class TwitterClient:
     def __init__(self):
-        # Using a reliable Nitter instance
-        self.base_url = "https://nitter.net"
+        # Using a more reliable Nitter instance
+        self.base_urls = [
+            "https://nitter.cz",
+            "https://nitter.lacontrevoie.fr",
+            "https://nitter.fdn.fr"
+        ]
+        self.current_instance = 0
+
+    async def _try_fetch_feed(self, username):
+        """Try fetching feed from different Nitter instances"""
+        for _ in range(len(self.base_urls)):
+            try:
+                url = f"{self.base_urls[self.current_instance]}/{username}/rss"
+                feed = feedparser.parse(url)
+                if feed.entries and not feed.get('bozo', 1):
+                    return feed
+            except Exception:
+                pass
+            # Try next instance
+            self.current_instance = (self.current_instance + 1) % len(self.base_urls)
+            await asyncio.sleep(1)  # Add delay between retries
+        return None
 
     async def get_user_by_username(self, username):
         """Verify if a Twitter user exists by checking their RSS feed"""
         try:
-            feed = feedparser.parse(f"{self.base_url}/{username}/rss")
-            if feed.entries:
+            feed = await self._try_fetch_feed(username)
+            if feed and feed.entries:
+                # Extract username and name from feed title
+                name = feed.feed.title.split("'")[0].strip()  # Get name before "'s tweets"
                 return {
                     'username': username,
-                    'name': feed.feed.title.replace("'s tweets", ""),
+                    'name': name,
                     'id': username,
                     'profile_image_url': self._get_profile_image(feed)
                 }
             return None
-        except Exception:
+        except Exception as e:
+            print(f"Error fetching user {username}: {str(e)}")
             return None
 
     async def get_recent_tweets(self, user_id):
         """Get recent tweets from user's RSS feed"""
         try:
-            feed = feedparser.parse(f"{self.base_url}/{user_id}/rss")
-            tweets = []
+            feed = await self._try_fetch_feed(user_id)
+            if not feed:
+                return []
 
+            tweets = []
             for entry in feed.entries[:5]:  # Get last 5 tweets
                 tweet = {
                     'id': self._extract_tweet_id(entry.link),
@@ -53,7 +79,8 @@ class TwitterClient:
                 tweets.append(tweet)
 
             return tweets
-        except Exception:
+        except Exception as e:
+            print(f"Error fetching tweets for {user_id}: {str(e)}")
             return []
 
     def _extract_tweet_id(self, url):
@@ -67,6 +94,8 @@ class TwitterClient:
         text = re.sub(r'<[^>]+>', '', html)
         # Remove multiple spaces
         text = re.sub(r'\s+', ' ', text)
+        # Decode HTML entities
+        text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
         return text.strip()
 
     def _extract_media(self, html):

@@ -9,9 +9,10 @@ class TwitterBot(commands.Bot):
         # Configure intents
         intents = discord.Intents.default()
         intents.message_content = True
-        # Enable the necessary intents for the bot
+        # Enable all necessary intents for the bot
         intents.guilds = True
         intents.guild_messages = True
+        intents.members = True  # Added this for better server member handling
 
         super().__init__(
             command_prefix=COMMAND_PREFIX,
@@ -35,7 +36,7 @@ class TwitterBot(commands.Bot):
 
 def run_bot():
     bot = TwitterBot()
-    bot.run(DISCORD_TOKEN)
+    bot.run(DISCORD_TOKEN, log_handler=None)  # Disable default handler to avoid double logging
 
 if __name__ == "__main__":
     run_bot()
