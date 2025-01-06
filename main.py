@@ -1,12 +1,21 @@
 from flask import Flask, render_template
 import os
+from urllib.parse import quote
 
 app = Flask(__name__)
 
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID', '')
-# Updated permissions to include necessary bot permissions
-DISCORD_PERMISSIONS = '537159744' # Permissions for bot management, message sending, and embed links
-OAUTH_URL = f'https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&permissions={DISCORD_PERMISSIONS}&scope=bot%20applications.commands'
+DISCORD_PERMISSIONS = '537159744'  # Bot management, message sending, embed links
+SCOPES = ['bot', 'applications.commands']
+
+# Create properly encoded OAuth URL
+OAUTH_URL = (
+    'https://discord.com/api/oauth2/authorize'
+    f'?client_id={DISCORD_CLIENT_ID}'
+    f'&permissions={DISCORD_PERMISSIONS}'
+    f'&scope={quote(" ".join(SCOPES))}'
+    '&response_type=code'
+)
 
 @app.route('/')
 def index():
