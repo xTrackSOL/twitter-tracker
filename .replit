@@ -49,7 +49,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python test_twitter.py elonmusk"
+args = "python test_twitter.py nasa"
 
 [[workflows.workflow]]
 name = "Generate Logo"

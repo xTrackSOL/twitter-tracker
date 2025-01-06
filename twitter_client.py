@@ -11,18 +11,18 @@ class TwitterClient:
     def __init__(self):
         # Updated list of reliable Nitter instances
         self.base_urls = [
-            "https://nitter.net",
             "https://nitter.privacydev.net",
             "https://nitter.esmailelbob.xyz",
             "https://nitter.d420.de",
             "https://nitter.foss.wtf",
+            "https://nitter.cz",
+            "https://nitter.net",
             "https://nitter.privacy.com.de",
             "https://nitter.poast.org",
-            "https://nitter.cz",
             "https://nitter.unixfox.eu",
             "https://nitter.salastil.com"
         ]
-        self.timeout = aiohttp.ClientTimeout(total=30)  # Increased timeout
+        self.timeout = aiohttp.ClientTimeout(total=15)  # Reduced timeout for faster fallback
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (compatible; DiscordBot/2.0; +https://discord.com)',
             'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml',
@@ -37,55 +37,51 @@ class TwitterClient:
 
         errors = []
         for instance_url in self.base_urls:
-            for attempt in range(2):  # Try each instance twice
-                try:
-                    encoded_username = quote(username)
-                    url = f"{instance_url}/{encoded_username}/rss"
-                    print(f"Trying {url}... (attempt {attempt + 1})")
+            try:
+                encoded_username = quote(username)
+                url = f"{instance_url}/{encoded_username}/rss"
+                print(f"Trying {url}...")
 
-                    async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                        try:
-                            async with session.get(url, ssl=False, headers=self.headers) as response:
-                                if response.status == 200:
-                                    content = await response.text()
+                async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                    try:
+                        async with session.get(url, ssl=False, headers=self.headers) as response:
+                            if response.status == 200:
+                                content = await response.text()
 
-                                    # Check for various error indicators
-                                    error_indicators = [
-                                        'Error loading profile',
-                                        'User not found',
-                                        'This account has been suspended',
-                                        'This account doesn\'t exist',
-                                    ]
+                                # Check for various error indicators
+                                error_indicators = [
+                                    'Error loading profile',
+                                    'User not found',
+                                    'This account has been suspended',
+                                    'This account doesn\'t exist',
+                                ]
 
-                                    if not content or any(indicator in content for indicator in error_indicators):
-                                        print(f"Error content from {instance_url}")
-                                        break  # Try next instance
-
-                                    feed = feedparser.parse(content)
-                                    if feed and not feed.get('bozo', 0) and feed.entries:
-                                        print(f"Successfully fetched feed from {instance_url}")
-                                        return feed
-
-                                elif response.status == 429:  # Rate limit
-                                    print(f"Rate limited by {instance_url}")
-                                    await asyncio.sleep(2 * (attempt + 1))  # Exponential backoff
+                                if not content or any(indicator in content for indicator in error_indicators):
+                                    print(f"Error content from {instance_url}")
                                     continue
-                                else:
-                                    print(f"Got status {response.status} from {instance_url}")
-                                    break  # Try next instance
 
-                        except asyncio.TimeoutError:
-                            print(f"Timeout with {instance_url}")
-                            continue
-                        except Exception as e:
-                            print(f"Connection error with {instance_url}: {str(e)}")
-                            continue
+                                feed = feedparser.parse(content)
+                                if feed and not feed.get('bozo', 0) and feed.entries:
+                                    print(f"Successfully fetched feed from {instance_url}")
+                                    return feed
 
-                except Exception as e:
-                    errors.append(f"Error with {instance_url}: {str(e)}")
-                    continue
+                            elif response.status == 429:  # Rate limit
+                                print(f"Rate limited by {instance_url}")
+                                await asyncio.sleep(1)
+                                continue
+                            else:
+                                print(f"Got status {response.status} from {instance_url}")
 
-                await asyncio.sleep(1)  # Rate limiting delay between attempts
+                    except asyncio.TimeoutError:
+                        print(f"Timeout with {instance_url}")
+                        continue
+                    except Exception as e:
+                        print(f"Connection error with {instance_url}: {str(e)}")
+                        continue
+
+            except Exception as e:
+                errors.append(f"Error with {instance_url}: {str(e)}")
+                continue
 
             await asyncio.sleep(0.5)  # Small delay between instances
 
@@ -120,7 +116,7 @@ class TwitterClient:
             return None
 
     async def get_recent_tweets(self, username: str) -> List[Dict]:
-        """Get recent tweets from user's RSS feed"""
+        """Get recent tweets from user's RSS feed with improved error handling"""
         try:
             print(f"\nFetching tweets for @{username}")
             feed = await self._try_fetch_feed(username)
@@ -130,7 +126,7 @@ class TwitterClient:
             tweets = []
             for entry in feed.entries[:5]:  # Get last 5 tweets
                 try:
-                    # Parse the date
+                    # Parse the date with multiple fallbacks
                     try:
                         parsed_date = email.utils.parsedate_to_datetime(entry.published)
                     except Exception:
@@ -139,16 +135,16 @@ class TwitterClient:
                         except Exception:
                             parsed_date = datetime.now()
 
-                    # Create tweet object
+                    # Create tweet object with enhanced metadata
                     tweet = {
                         'id': self._extract_tweet_id(entry.link),
                         'text': self._clean_text(entry.description),
                         'created_at': parsed_date,
                         'public_metrics': self._extract_metrics(entry.description),
-                        'referenced_tweets': [{'type': 'retweeted'}] if 'RT by' in entry.title else []
+                        'referenced_tweets': self._extract_tweet_type(entry.title, entry.description)
                     }
 
-                    # Extract media if present
+                    # Extract media with improved handling
                     media = self._extract_media(entry.description)
                     if media:
                         tweet['attachments'] = {'media': media}
@@ -163,6 +159,48 @@ class TwitterClient:
         except Exception as e:
             print(f"Error fetching tweets for {username}: {str(e)}")
             return []
+
+    def _extract_tweet_type(self, title: str, description: str) -> List[Dict]:
+        """Extract tweet type (normal, retweet, reply, quote)"""
+        tweet_types = []
+
+        # Check for retweets
+        if 'RT by' in title:
+            tweet_types.append({'type': 'retweeted'})
+
+        # Check for replies
+        if 'R to @' in title or 'Replying to @' in description:
+            tweet_types.append({'type': 'replied_to'})
+
+        # Check for quotes
+        if 'QT @' in title or 'Quoting @' in description:
+            tweet_types.append({'type': 'quoted'})
+
+        return tweet_types
+
+    def _extract_media(self, html: str) -> List[Dict]:
+        """Extract media URLs from tweet HTML with enhanced support"""
+        media = []
+
+        # Extract images
+        img_matches = re.finditer(r'<img[^>]+src="([^"]+)"', html)
+        for match in img_matches:
+            url = match.group(1)
+            if 'tweet_video_thumb' not in url and 'emoji' not in url:
+                media.append({
+                    'url': url,
+                    'type': 'photo'
+                })
+
+        # Extract videos (thumbnail URLs that indicate video content)
+        video_indicators = ['tweet_video_thumb', 'ext_tw_video_thumb']
+        if any(indicator in html for indicator in video_indicators):
+            media.append({
+                'type': 'video',
+                'url': None  # Nitter RSS doesn't provide direct video URLs
+            })
+
+        return media
 
     def _extract_tweet_id(self, url: str) -> str:
         """Extract tweet ID from URL"""
@@ -179,17 +217,6 @@ class TwitterClient:
         text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
         return text.strip()
 
-    def _extract_media(self, html: str) -> List[Dict]:
-        """Extract media URLs from tweet HTML"""
-        media = []
-        img_matches = re.finditer(r'<img[^>]+src="([^"]+)"', html)
-        for match in img_matches:
-            if 'tweet_video_thumb' not in match.group(1):
-                media.append({
-                    'url': match.group(1),
-                    'type': 'photo'
-                })
-        return media
 
     def _get_profile_image(self, feed: feedparser.FeedParserDict) -> Optional[str]:
         """Extract profile image URL from feed data"""

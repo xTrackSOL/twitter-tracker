@@ -4,7 +4,13 @@ from config import DB_CONFIG
 
 class Database:
     def __init__(self):
-        self.conn = psycopg2.connect(**DB_CONFIG)
+        self.conn = psycopg2.connect(
+            dbname=DB_CONFIG['database'],
+            user=DB_CONFIG['user'],
+            password=DB_CONFIG['password'],
+            host=DB_CONFIG['host'],
+            port=DB_CONFIG['port']
+        )
         self.create_tables()
 
     def create_tables(self):
@@ -13,16 +19,19 @@ class Database:
                 cur.execute(f.read())
             self.conn.commit()
 
-    def add_twitter_account(self, twitter_handle, channel_id):
+    def add_twitter_account(self, twitter_handle, channel_id, last_tweet_id=None):
+        """Add a Twitter account to track with optional last_tweet_id"""
         with self.conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO tracked_accounts (twitter_handle, channel_id)
-                VALUES (%s, %s)
-                ON CONFLICT (twitter_handle, channel_id) DO NOTHING
+                INSERT INTO tracked_accounts (twitter_handle, channel_id, last_tweet_id)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (twitter_handle, channel_id) DO UPDATE 
+                SET last_tweet_id = EXCLUDED.last_tweet_id
                 RETURNING id
-            """, (twitter_handle, channel_id))
+            """, (twitter_handle, channel_id, last_tweet_id))
             self.conn.commit()
-            return cur.fetchone()
+            result = cur.fetchone()
+            return result[0] if result else None
 
     def remove_twitter_account(self, twitter_handle, channel_id):
         with self.conn.cursor() as cur:
@@ -46,6 +55,15 @@ class Database:
                 WHERE channel_id = %s
             """, (channel_id,))
             return [row['twitter_handle'] for row in cur.fetchall()]
+
+    def update_last_tweet_id(self, twitter_handle, channel_id, tweet_id):
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                UPDATE tracked_accounts
+                SET last_tweet_id = %s
+                WHERE twitter_handle = %s AND channel_id = %s
+            """, (tweet_id, twitter_handle, channel_id))
+            self.conn.commit()
 
     def close(self):
         self.conn.close()

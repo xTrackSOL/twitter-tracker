@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS tracked_accounts (
     twitter_handle VARCHAR(15) NOT NULL,
     channel_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_tweet_id VARCHAR(40) DEFAULT NULL,
     UNIQUE(twitter_handle, channel_id)
 );
 

@@ -46,16 +46,28 @@ class TwitterCommands(commands.Cog):
                 error_msg += "• The username is spelled correctly\n"
                 error_msg += "• The account is not private\n"
                 error_msg += "• The account exists and is active\n"
-                error_msg += "\nIf you're sure the account exists, please try again in a few moments."
                 await interaction.followup.send(
                     embed=format_error_message(error_msg),
                     ephemeral=True
                 )
                 return
 
-            # Add to database
-            result = self.db.add_twitter_account(username, interaction.channel_id)
-            if not result:
+            # Get latest tweet to start tracking from there
+            tweets = await self.twitter.get_recent_tweets(username)
+            latest_tweet_id = tweets[0]['id'] if tweets else None
+
+            # Add to database with the latest tweet ID
+            result = self.db.add_twitter_account(username, interaction.channel_id, latest_tweet_id)
+            if result:
+                embed = discord.Embed(
+                    title="✅ Success",
+                    description=f"Now tracking @{username} ({user['name']}) in this channel. You'll receive updates when they tweet!",
+                    color=discord.Color.green()
+                )
+                if user['profile_image_url']:
+                    embed.set_thumbnail(url=user['profile_image_url'])
+                await interaction.followup.send(embed=embed)
+            else:
                 await interaction.followup.send(
                     embed=discord.Embed(
                         title="ℹ️ Already Tracking",
@@ -63,24 +75,11 @@ class TwitterCommands(commands.Cog):
                         color=discord.Color.blue()
                     )
                 )
-                return
-
-            embed = discord.Embed(
-                title="✅ Success",
-                description=f"Now tracking @{username} ({user['name']}) in this channel. You'll receive updates when they tweet!",
-                color=discord.Color.green()
-            )
-
-            # Add user avatar if available
-            if user['profile_image_url']:
-                embed.set_thumbnail(url=user['profile_image_url'])
-
-            await interaction.followup.send(embed=embed)
 
         except Exception as e:
             print(f"Error tracking user {username}: {str(e)}")
             await interaction.followup.send(
-                embed=format_error_message(f"An error occurred while setting up tracking. Please try again in a few moments."),
+                embed=format_error_message("An error occurred while setting up tracking. Please try again in a few moments."),
                 ephemeral=True
             )
 
@@ -91,11 +90,8 @@ class TwitterCommands(commands.Cog):
         username: str
     ):
         await interaction.response.defer(thinking=True)
-
         try:
-            # Remove @ symbol if provided
             username = username.lstrip('@')
-
             if self.db.remove_twitter_account(username, interaction.channel_id):
                 await interaction.followup.send(
                     embed=discord.Embed(
@@ -120,7 +116,6 @@ class TwitterCommands(commands.Cog):
     @app_commands.command(name="list", description="List all tracked Twitter accounts in this channel")
     async def list_tracked(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
-
         try:
             accounts = self.db.get_channel_accounts(interaction.channel_id)
             if not accounts:
@@ -160,23 +155,49 @@ class TwitterCommands(commands.Cog):
 
                     # Fetch recent tweets
                     tweets = await self.twitter.get_recent_tweets(user['username'])
-                    if tweets:
-                        channel = self.bot.get_channel(account['channel_id'])
-                        if channel:
-                            for tweet in tweets:
-                                try:
-                                    embed = create_tweet_embed(tweet, user)
-                                    await channel.send(embed=embed)
-                                except Exception as e:
-                                    print(f"Error creating embed for tweet: {str(e)}")
-                                    continue
+                    if not tweets:
+                        continue
+
+                    channel = self.bot.get_channel(account['channel_id'])
+                    if not channel:
+                        continue
+
+                    # Get the last tweet ID we've seen
+                    last_tweet_id = account.get('last_tweet_id')
+                    new_last_tweet_id = None
+
+                    # Process tweets (newest first)
+                    for tweet in tweets:
+                        tweet_id = tweet['id']
+
+                        # Skip if we've seen this tweet or older ones
+                        if last_tweet_id and int(tweet_id) <= int(last_tweet_id):
+                            continue
+
+                        try:
+                            embed = create_tweet_embed(tweet, user)
+                            await channel.send(embed=embed)
+                            if not new_last_tweet_id:  # Store the newest tweet ID
+                                new_last_tweet_id = tweet_id
+                        except Exception as e:
+                            print(f"Error creating embed for tweet: {str(e)}")
+                            continue
+
+                    # Update the last seen tweet ID if we found new tweets
+                    if new_last_tweet_id:
+                        self.db.update_last_tweet_id(
+                            account['twitter_handle'],
+                            account['channel_id'],
+                            new_last_tweet_id
+                        )
 
                 except Exception as e:
                     print(f"Error checking tweets for {account['twitter_handle']}: {str(e)}")
                     continue
 
-                # Add delay between checking different accounts
+                # Small delay between checking different accounts
                 await asyncio.sleep(2)
+
         except Exception as e:
             print(f"Error in check_tweets task: {str(e)}")
 
