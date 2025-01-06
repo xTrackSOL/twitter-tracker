@@ -13,11 +13,13 @@ OAUTH_URL = (
     '&scope=bot%20applications.commands'
 )
 
-TELEGRAM_BOT_USERNAME = os.getenv('TELEGRAM_BOT_USERNAME', 'YourBotUsername')
+TELEGRAM_BOT_USERNAME = 'xTrackSOL_bot'
 
 @app.route('/')
 def index():
     return render_template('index.html', oauth_url=OAUTH_URL, bot_username=TELEGRAM_BOT_USERNAME)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000)
+    # Ensure we're binding to all network interfaces
+    port = int(os.environ.get('PORT', 3000))
+    app.run(host='0.0.0.0', port=port)
