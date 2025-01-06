@@ -6,8 +6,13 @@ from cogs.twitter_commands import TwitterCommands
 
 class TwitterBot(commands.Bot):
     def __init__(self):
+        # Configure intents
         intents = discord.Intents.default()
         intents.message_content = True
+        # Enable the necessary intents for the bot
+        intents.guilds = True
+        intents.guild_messages = True
+
         super().__init__(
             command_prefix=COMMAND_PREFIX,
             intents=intents,

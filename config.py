@@ -4,11 +4,6 @@ import os
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 COMMAND_PREFIX = '!'
 
-# Twitter API Configuration
-TWITTER_BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN')
-TWITTER_API_KEY = os.getenv('TWITTER_API_KEY')
-TWITTER_API_SECRET = os.getenv('TWITTER_API_SECRET')
-
 # Database Configuration
 DB_CONFIG = {
     'user': os.getenv('PGUSER'),
