@@ -27,6 +27,10 @@ args = "Generate Logo"
 task = "workflow.run"
 args = "Landing Page Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Generate Assets"
+
 [[workflows.workflow]]
 name = "Discord Twitter Bot"
 author = "agent"
@@ -83,6 +87,20 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 3000
+
+[[workflows.workflow]]
+name = "Generate Assets"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python generate_logo.py"
 
 [deployment]
 run = ["sh", "-c", "python bot.py"]

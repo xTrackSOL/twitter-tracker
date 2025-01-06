@@ -546,12 +546,11 @@ h1 {
     }
 }
 
-/* Add after features section styles */
-
+/* Download section styles */
 .download-section {
     margin: 4rem auto;
     text-align: center;
-    max-width: 400px;
+    max-width: 800px;
     padding: 2rem;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 16px;
@@ -564,18 +563,43 @@ h1 {
     margin-bottom: 1.5rem;
 }
 
-.logo-preview {
+.download-section h4 {
+    color: var(--text);
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.assets-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.asset-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.logo-preview, .banner-preview {
     margin: 1rem 0 2rem;
     padding: 1rem;
     background: var(--background);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
 }
 
 .preview-image {
     width: 200px;
     height: 200px;
     object-fit: contain;
+}
+
+.preview-image.banner {
+    width: 100%;
+    height: auto;
+    max-width: 400px;
 }
 
 .download-button {
@@ -596,4 +620,18 @@ h1 {
     background-color: var(--primary-hover);
     transform: translateY(-2px);
     box-shadow: 0 8px 30px rgba(0, 136, 204, 0.2);
+}
+
+@media (max-width: 768px) {
+    .download-section {
+        padding: 1rem;
+    }
+
+    .assets-container {
+        grid-template-columns: 1fr;
+    }
+
+    .preview-image.banner {
+        max-width: 100%;
+    }
 }

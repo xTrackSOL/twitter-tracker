@@ -73,17 +73,34 @@
         </div>
 
         <div class="download-section">
-            <h3>Download Logo</h3>
-            <div class="logo-preview">
-                <img src="{{ url_for('static', filename='images/bot_logo.png') }}" alt="Twitter Tracker Bot Logo" class="preview-image">
+                <h3>Download Assets</h3>
+                <div class="assets-container">
+                    <div class="asset-item">
+                        <h4>Profile Logo</h4>
+                        <div class="logo-preview">
+                            <img src="{{ url_for('static', filename='images/bot_logo.png') }}" alt="Twitter Tracker Bot Logo" class="preview-image">
+                        </div>
+                        <a href="{{ url_for('static', filename='images/bot_logo.png') }}" download="twitter_tracker_logo.png" class="download-button">
+                            <svg viewBox="0 0 24 24" fill="currentColor" height="24" width="24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 13l-4-4h8l-4 4z"/>
+                            </svg>
+                            Download Logo
+                        </a>
+                    </div>
+                    <div class="asset-item">
+                        <h4>Banner Image</h4>
+                        <div class="banner-preview">
+                            <img src="{{ url_for('static', filename='images/twitter_banner.png') }}" alt="Twitter Tracker Bot Banner" class="preview-image banner">
+                        </div>
+                        <a href="{{ url_for('static', filename='images/twitter_banner.png') }}" download="twitter_tracker_banner.png" class="download-button">
+                            <svg viewBox="0 0 24 24" fill="currentColor" height="24" width="24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 13l-4-4h8l-4 4z"/>
+                            </svg>
+                            Download Banner
+                        </a>
+                    </div>
+                </div>
             </div>
-            <a href="{{ url_for('static', filename='images/bot_logo.png') }}" download="twitter_tracker_logo.png" class="download-button">
-                <svg viewBox="0 0 24 24" fill="currentColor" height="24" width="24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 13l-4-4h8l-4 4z"/>
-                </svg>
-                Download Logo
-            </a>
-        </div>
 
         <section class="stats-section">
                 <div class="stat-container">
