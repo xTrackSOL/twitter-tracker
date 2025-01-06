@@ -13,14 +13,14 @@ DB_CONFIG = {
     'database': os.getenv('PGDATABASE')
 }
 
-# Tweet Colors (Inspired by Hive Builders theme)
+# Tweet Colors
 COLORS = {
-    'text': 0x6B46C1,     # Rich purple for text tweets
-    'media': 0x9F7AEA,    # Light purple for media tweets
-    'retweet': 0x4A5568,  # Slate gray for retweets
-    'error': 0xE53E3E,    # Red for errors
-    'success': 0x48BB78   # Green for success messages
+    'text': 0x6B46C1,
+    'media': 0x9F7AEA,
+    'retweet': 0x4A5568,
+    'error': 0xE53E3E,
+    'success': 0x48BB78
 }
 
 # Refresh interval for checking new tweets (in seconds)
-TWEET_CHECK_INTERVAL = 60
+TWEET_CHECK_INTERVAL = 15  # Reduced to 15 seconds for faster updates

@@ -45,8 +45,11 @@ class Database:
 
     def get_tracked_accounts(self):
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
-            cur.execute("SELECT * FROM tracked_accounts")
-            return cur.fetchall()
+            cur.execute("""
+                SELECT id, twitter_handle, channel_id, last_tweet_id, created_at
+                FROM tracked_accounts
+            """)  # Explicitly select all columns
+            return [dict(row) for row in cur.fetchall()]  # Convert to dictionary
 
     def get_channel_accounts(self, channel_id):
         with self.conn.cursor(cursor_factory=DictCursor) as cur:
