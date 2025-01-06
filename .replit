@@ -31,6 +31,10 @@ args = "Landing Page Server"
 task = "workflow.run"
 args = "Generate Assets"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Telegram Bot"
+
 [[workflows.workflow]]
 name = "Discord Twitter Bot"
 author = "agent"
@@ -102,8 +106,22 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python generate_logo.py"
 
+[[workflows.workflow]]
+name = "Telegram Bot"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python telegram_bot.py"
+
 [deployment]
-run = ["sh", "-c", "python bot.py"]
+run = ["sh", "-c", "python main.py & python bot.py"]
 deploymentTarget = "cloudrun"
 
 [[ports]]
