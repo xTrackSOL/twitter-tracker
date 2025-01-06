@@ -651,6 +651,7 @@ dependencies = [
     { name = "pillow" },
     { name = "psycopg2-binary" },
     { name = "python-telegram-bot" },
+    { name = "requests" },
     { name = "telegram" },
     { name = "twilio" },
 ]
@@ -664,6 +665,7 @@ requires-dist = [
     { name = "pillow", specifier = ">=11.1.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "python-telegram-bot", specifier = ">=21.10" },
+    { name = "requests", specifier = ">=2.32.3" },
     { name = "telegram", specifier = ">=0.0.1" },
     { name = "twilio", specifier = ">=9.4.1" },
 ]
