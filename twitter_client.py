@@ -22,13 +22,16 @@ class TwitterClient:
             'Accept': 'application/rss+xml'
         }
         self.semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
+        self._failed_instances = set()
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session with connection pooling"""
         if self.session is None or self.session.closed:
+            conn = aiohttp.TCPConnector(limit=10, force_close=True, enable_cleanup_closed=True)
             self.session = aiohttp.ClientSession(
                 timeout=self.timeout,
-                connector=aiohttp.TCPConnector(limit=10, force_close=True)
+                connector=conn,
+                headers=self.headers
             )
         return self.session
 
@@ -38,6 +41,7 @@ class TwitterClient:
             try:
                 feed = await self._try_fetch_feed(username)
                 if not feed or not feed.feed:
+                    logger.warning(f"Could not fetch feed for user @{username}")
                     return None
 
                 name = feed.feed.title.split("'")[0].strip()
@@ -57,6 +61,7 @@ class TwitterClient:
             try:
                 feed = await self._try_fetch_feed(username)
                 if not feed or not feed.entries:
+                    logger.warning(f"No tweets found for @{username}")
                     return []
 
                 tweets = []
@@ -75,8 +80,9 @@ class TwitterClient:
                         tweet['attachments'] = {'media': media}
 
                     tweets.append(tweet)
+                    logger.info(f"Successfully fetched latest tweet from @{username}")
                 except Exception as e:
-                    logger.error(f"Error parsing tweet: {str(e)}")
+                    logger.error(f"Error parsing tweet for @{username}: {str(e)}")
 
                 return tweets
             except Exception as e:
@@ -87,27 +93,39 @@ class TwitterClient:
         """Try fetching feed from multiple Nitter instances with fallback"""
         username = username.strip('@').strip()
 
-        # Try each instance in random order until one works
-        instances = random.sample(self.instances, len(self.instances))
+        # Filter out failed instances and randomize the remaining ones
+        available_instances = [i for i in self.instances if i not in self._failed_instances]
+        if not available_instances:
+            # Reset failed instances if all have failed
+            self._failed_instances.clear()
+            available_instances = self.instances
+
+        instances = random.sample(available_instances, len(available_instances))
 
         for base_url in instances:
             try:
                 url = f"{base_url}/{quote(username)}/rss"
                 session = await self._get_session()
 
-                async with session.get(url, ssl=False, headers=self.headers) as response:
+                async with session.get(url, ssl=False) as response:
                     if response.status == 200:
                         content = await response.text()
                         if not content or 'Error' in content:
+                            logger.warning(f"Invalid content from {base_url}")
                             continue
                         feed = feedparser.parse(content)
                         if feed and feed.entries:
+                            # Successfully found working instance
+                            if base_url in self._failed_instances:
+                                self._failed_instances.remove(base_url)
                             return feed
             except asyncio.TimeoutError:
                 logger.warning(f"Timeout on {base_url} for @{username}")
+                self._failed_instances.add(base_url)
                 continue
             except Exception as e:
                 logger.warning(f"Error on {base_url} for @{username}: {str(e)}")
+                self._failed_instances.add(base_url)
                 continue
 
         logger.error(f"All instances failed for @{username}")
@@ -124,7 +142,9 @@ class TwitterClient:
     def _clean_text(self, html: str) -> str:
         """Clean tweet text from HTML"""
         try:
+            # Remove HTML tags
             text = re.sub(r'<[^>]+>', '', html)
+            # Remove multiple spaces
             text = re.sub(r'\s+', ' ', text)
             return text.strip()
         except:

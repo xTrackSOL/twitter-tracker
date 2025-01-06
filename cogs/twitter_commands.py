@@ -39,46 +39,50 @@ class TwitterCommands(commands.Cog):
 
         # Check if it's a URL
         url_patterns = [
-            r'(?:https?://)?(?:www\.)?(?:twitter\.com|x\.com)/([a-zA-Z0-9_]+)/?$',
-            r'(?:https?://)?(?:www\.)?t\.co/([a-zA-Z0-9_]+)/?$'
+            r'(?:https?://)?(?:www\.)?(?:twitter\.com|x\.com)/([a-zA-Z0-9_]+)(?:/.*)?$',
+            r'(?:https?://)?(?:www\.)?t\.co/([a-zA-Z0-9_]+)(?:/.*)?$'
         ]
 
         for pattern in url_patterns:
             match = re.match(pattern, input_text)
             if match:
-                return match.group(1)
+                username = match.group(1)
+                logger.info(f"Extracted username '{username}' from URL: {input_text}")
+                return username
 
         # If no URL pattern matches, return the cleaned input
+        logger.info(f"Using direct input as username: {input_text}")
         return input_text
 
     @app_commands.command(
         name="track",
-        description="Track a Twitter account by username or profile URL"
+        description="Track a Twitter/X account using their username or profile URL"
     )
     @app_commands.describe(
-        twitter_input="Twitter username (e.g. @username) or profile URL (e.g. https://x.com/username)"
+        twitter_input="Enter @username or full profile URL (e.g., https://x.com/username)"
     )
     async def track(self, interaction: discord.Interaction, twitter_input: str):
         async with self.command_lock:
             try:
+                await interaction.response.send_message(
+                    f"Processing your request...",
+                    ephemeral=True
+                )
+
                 username = self._extract_username(twitter_input)
                 if not username:
-                    await interaction.response.send_message(
-                        "Please provide a valid Twitter username or profile URL",
-                        ephemeral=True
+                    await interaction.edit_original_response(
+                        content="❌ Please provide a valid Twitter username or profile URL"
                     )
                     return
 
-                await interaction.response.send_message(
-                    f"Setting up tracking for @{username}...",
-                    ephemeral=True
-                )
+                logger.info(f"Attempting to track user: {username}")
 
                 # Quick check if user exists before adding to database
                 user = await self.twitter.get_user_by_username(username)
                 if not user:
                     await interaction.edit_original_response(
-                        content=f"❌ Could not find Twitter user @{username}. Please check the username/URL and try again."
+                        content=f"❌ Could not find Twitter user @{username}. Please verify that:\n• The username is spelled correctly\n• The account is not private\n• The account exists and is active"
                     )
                     return
 
@@ -94,10 +98,13 @@ class TwitterCommands(commands.Cog):
                             interaction.channel_id,
                             str(tweets[0]['id'])
                         )
-
-                    await interaction.edit_original_response(
-                        content=f"✅ Started tracking @{username} in this channel!"
-                    )
+                        await interaction.edit_original_response(
+                            content=f"✅ Successfully tracking @{username} in this channel!\nTheir latest tweet will appear soon."
+                        )
+                    else:
+                        await interaction.edit_original_response(
+                            content=f"✅ Started tracking @{username}, but couldn't fetch their latest tweet. Will keep trying!"
+                        )
                 else:
                     await interaction.edit_original_response(
                         content=f"ℹ️ @{username} is already being tracked in this channel!"
@@ -110,7 +117,7 @@ class TwitterCommands(commands.Cog):
             except Exception as e:
                 logger.error(f"Error in track command: {str(e)}", exc_info=True)
                 await interaction.edit_original_response(
-                    content="An error occurred. Please try again in a few moments."
+                    content="❌ An error occurred. Please try again in a few moments."
                 )
 
     @app_commands.command(name="untrack", description="Stop tracking a Twitter account in this channel")
