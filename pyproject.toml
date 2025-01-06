@@ -7,6 +7,7 @@ dependencies = [
     "aiohttp>=3.11.11",
     "discord-py>=2.4.0",
     "feedparser>=6.0.11",
+    "flask>=3.1.0",
     "pillow>=11.1.0",
     "psycopg2-binary>=2.9.10",
 ]

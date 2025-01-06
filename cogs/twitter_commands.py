@@ -57,8 +57,23 @@ class TwitterCommands(commands.Cog):
                     await interaction.followup.send("❌ Please provide a valid Twitter username or profile URL.")
                     return
 
-                # Verify user exists
-                user = await self.twitter.get_user_by_username(username)
+                # First try to verify the user exists
+                for attempt in range(3):  # Try up to 3 times
+                    try:
+                        user = await self.twitter.get_user_by_username(username)
+                        if user:
+                            break
+                        await asyncio.sleep(1)  # Wait between attempts
+                    except Exception as e:
+                        logger.warning(f"Attempt {attempt + 1} failed for @{username}: {str(e)}")
+                        if attempt == 2:  # Last attempt
+                            await interaction.followup.send(
+                                f"❌ Unable to verify Twitter user @{username}. The service might be temporarily unavailable.\n"
+                                "Please try again in a few minutes."
+                            )
+                            return
+                        await asyncio.sleep(2)  # Wait longer between retries
+
                 if not user:
                     await interaction.followup.send(
                         f"❌ Could not find Twitter user @{username}. Please check that:\n"
@@ -71,7 +86,18 @@ class TwitterCommands(commands.Cog):
                 result = self.db.add_twitter_account(username, interaction.channel_id)
 
                 if result:
-                    tweets = await self.twitter.get_recent_tweets(username)
+                    # Try to get initial tweets with retries
+                    tweets = None
+                    for attempt in range(3):
+                        try:
+                            tweets = await self.twitter.get_recent_tweets(username)
+                            if tweets:
+                                break
+                            await asyncio.sleep(1)
+                        except Exception as e:
+                            logger.warning(f"Tweet fetch attempt {attempt + 1} failed for @{username}: {str(e)}")
+                            await asyncio.sleep(2)
+
                     if tweets:
                         self.db.update_last_tweet_id(
                             username, 
@@ -79,11 +105,13 @@ class TwitterCommands(commands.Cog):
                             str(tweets[0]['id'])
                         )
                         await interaction.followup.send(
-                            f"✅ Now tracking @{username} in this channel! Their latest tweet will appear soon."
+                            f"✅ Successfully tracking @{username} in this channel!\n"
+                            "Their latest tweet will appear soon."
                         )
                     else:
                         await interaction.followup.send(
-                            f"✅ Started tracking @{username}, but couldn't fetch their latest tweet. Will keep trying!"
+                            f"✅ Started tracking @{username}, but couldn't fetch their latest tweet.\n"
+                            "Will keep trying! This might take a few minutes."
                         )
                 else:
                     await interaction.followup.send(
@@ -93,7 +121,8 @@ class TwitterCommands(commands.Cog):
             except Exception as e:
                 logger.error(f"Error in track command: {str(e)}", exc_info=True)
                 await interaction.followup.send(
-                    "❌ An error occurred. Please try again in a few moments."
+                    "❌ An error occurred while setting up tracking.\n"
+                    "The service might be experiencing issues. Please try again in a few minutes."
                 )
 
     @app_commands.command()
